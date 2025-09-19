@@ -7,8 +7,17 @@ import logging
 from .loadcmd import load
 from .tokenizecmd import tokenize
 
+def signal_handler(signal, frame):
+    if os.environ.get("HTTP_PROXY"):
+        del os.environ["HTTP_PROXY"]
+    if os.environ.get("HTTPS_PROXY"):
+        del os.environ["HTTPS_PROXY"]
+        
+    sys.exit(0)
 
 def main():
+    signal.signal(signal.SIGINT, signal_handler)
+    
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)-8s %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
 
     parser = argparse.ArgumentParser(description="Benchmarking tool for Azure OpenAI Provisioned Throughput Units (PTUs).")
@@ -34,6 +43,7 @@ def main():
     load_parser.add_argument("-t", "--retry", type=str, default="none", help="Request retry strategy. See README for details", choices=["none", "exponential"])
     load_parser.add_argument("-e", "--deployment", type=str, help="Azure OpenAI deployment name.", required=True)
     load_parser.add_argument("api_base_endpoint", help="Azure OpenAI deployment base endpoint.", nargs=1)
+        load_parser.add_argument("--proxy", type=str, help="HTTP proxy to use for requests. Defaults to unset.")
     load_parser.set_defaults(func=load)
 
     tokenizer_parser = sub_parsers.add_parser("tokenize", help="Text tokenization tool.")
@@ -47,6 +57,11 @@ def main():
     tokenizer_parser.set_defaults(func=tokenize)
 
     args = parser.parse_args()
+
+    if args.proxy is not None:
+        os.environ["HTTP_PROXY"] = args.proxy
+        os.environ["HTTPS_PROXY"] = args.proxy
+
     if "func" in args:
         args.func(args)
     else:

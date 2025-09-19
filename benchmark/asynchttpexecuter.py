@@ -43,7 +43,7 @@ class AsyncHTTPExecuter:
         orig_sigterm_handler = signal.signal(signal.SIGTERM, self._terminate)
         # disable all TCP limits for highly parallel loads
         conn = aiohttp.TCPConnector(limit=0)
-        async with aiohttp.ClientSession(connector=conn) as session:
+        async with aiohttp.ClientSession(trust_env=True, connector=conn) as session:
             start_time = time.time()
             calls_made = 0
             request_tasks = set()
